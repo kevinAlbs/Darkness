@@ -27,7 +27,7 @@ var Platform = (function(){
 
 	that.createFalling = function(x, y, width, falling_platform_group) {
 		var falling = game.add.tileSprite(x, y, width, 10, "falling_platform");
-	    falling.fall_timer = 500;
+	    falling.fall_timer = 400;
 	    falling_platform_group.add(falling);
 	    falling.body.immovable = true;
 	};

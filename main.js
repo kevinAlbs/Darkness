@@ -19,6 +19,8 @@ var state_gameplay = (function(){
   var heart_group;
   var keys, mouse_down, mouse_click = false, click_lock = false;
   var world_height = 10000;
+  var checkpoint = null;
+  var checkpoint_reached = false;
 
   /* setup for keyboard/mouse input */
   function initInput(){
@@ -53,6 +55,7 @@ var state_gameplay = (function(){
     game.load.image("player_bullet", "player_bullet.png");
     game.load.image("falling_platform", "falling_platform.png");
     game.load.image("destructable_platform", "destructable_platform.png");
+    game.load.image("flag", "flag.png");
     game.load.json("map_data", "data.json");
     game.stage.setBackgroundColor(0x000000);
   };
@@ -109,41 +112,17 @@ var state_gameplay = (function(){
       enemy_group: enemy_group
     }, player);
 
+    if(checkpoint_reached) {
+      player.x = checkpoint.x;
+      player.y = checkpoint.y - 7;
+    }
+
     darkness = game.add.tileSprite(0, 10000, 320, 460, "darkness");
     game.physics.enable(darkness, Phaser.Physics.ARCADE);
     darkness.body.velocity.y = -10;
 
     heart_group = game.add.group();
     updatePlayerHealth(0);
-
-
-    pendulum_heads = game.add.group();
-    pendulum_roots = game.add.group();
-
-    /*
-    var pendulum_head = game.add.sprite(100, 350, "platform");
-    pendulum_head.scale.setTo(5, 1);
-
-    game.physics.enable(pendulum_head, Phaser.Physics.ARCADE);
-
-    
-
-    pendulum_head.body.immoving = true;
-    pendulum_heads.add(pendulum_head);
-
-    var pendulum_root = game.add.sprite(100, 120, "platform");
-    game.physics.enable(pendulum_root, Phaser.Physics.ARCADE);
-    pendulum_roots.add(pendulum_root);
-
-
-    var p = {
-      "root" : pendulum_root,
-      "head" : pendulum_head,
-      "xdir" : "left",
-      "ydir" : "up"
-    };
-    pendulums.add(p);
-    */
 
   };
 
@@ -211,14 +190,20 @@ var state_gameplay = (function(){
     });
     game.physics.arcade.collide(player, platform_group);
     game.physics.arcade.collide(player, destructable_platform_group);
+
+    var to_be_destroyed = [];
     game.physics.arcade.collide(destructable_platform_group, player_bullet_group, function(p, b){
       p.health--;
       if(p.health <= 0){
-        p.destroy();
+        to_be_destroyed.push(p);
       }
-      b.kill();
       Utilities.createExplosion(b.body.x, b.body.y);
+      b.kill();
     });
+
+    for(var i = 0; i < to_be_destroyed.length; i++){
+      to_be_destroyed[i].destroy();
+    }
     game.physics.arcade.collide(player, falling_platform_group, function(pl, plat){
       if(pl.body.touching.down){
         plat.fall_initiated = true;
@@ -229,31 +214,14 @@ var state_gameplay = (function(){
     game.physics.arcade.collide(player, moving_platform_group);
     Platform.updateMoving(moving_platform_group);
 
-    /*
-    game.physics.arcade.collide(player, pendulum_heads, function(pl, ph){
-      
-    });
-    pendulums.iterate(function(p){
-      var head = p.head;
-      var root = p.root;
-
-      var xflip = p.xdir == "left" ? -1 : 1;
-      var yflip = p.ydir == "up" ? -1 : 1;
-      head.body.acceleration.x = 100 * xflip;
-      //head.body.acceleration.y = 100 * yflip;
-
-      if(head.body.velocity.x > 100 && p.xdir == "right") {
-        p.xdir = "left";
-      } else if (head.body.velocity.x < -100 && p.xdir == "left") {
-        p.xdir = "right";
-      }
-      head.body.acceleration.y = head.body.acceleration.x;
-    });
-    */
-
     enemy_group.forEachAlive(function(enemy){
       Enemy.ai(enemy, enemy_bullet_group, player);
-    })
+    });
+
+    if (checkpoint != null && Math.abs(player.y - checkpoint.y) <= 15){
+      checkpoint_reached = true;
+    }
+    
     if(game.input.keyboard.isDown(Phaser.Keyboard.W) && player.body.touching.down){
       player.body.velocity.y = -500;
     }
@@ -279,6 +247,10 @@ var state_gameplay = (function(){
       heart.crop(new Phaser.Rectangle(0, 0, 5, 10));
       heart.fixedToCamera = true;
     }
+  }
+
+  that.setCheckpoint = function(x, y){
+    checkpoint = game.add.sprite(x,y,"flag");
   }
   return that;
 }());

@@ -23,6 +23,8 @@ var DataImporter = (function(){
 			var p = json.enemies[i];
 			Enemy.createEnemy(p.x, p.y, groups.enemy_group);
 		}
+
+		state_gameplay.setCheckpoint(json.checkpoints[0].x, json.checkpoints[0].y);
 	}
 	return that;
 }());
