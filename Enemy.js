@@ -4,7 +4,7 @@
 
 var Enemy = (function(){
 	var that = {};
-	that.addEnemy = function(x,y, enemy_group) {
+	that.createEnemy = function(x,y, enemy_group) {
 		//todo: add pooling
 		var enemy = enemy_group.create(x,y,"enemy");
 		enemy.anchor.setTo(.5, .5);

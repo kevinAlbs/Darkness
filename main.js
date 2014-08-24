@@ -6,6 +6,9 @@ var state_gameplay = (function(){
   var that = {};
   var player, 
       platform_group,
+      falling_platform_group,
+      moving_platform_group,
+      descructable_platform_group,
       enemy_group,
       enemy_bullet_group,
       player_bullet_group;
@@ -48,6 +51,9 @@ var state_gameplay = (function(){
     game.load.spritesheet("player", "player.png", 11, 25);
     game.load.image("enemy_bullet", "enemy_bullet.png");
     game.load.image("player_bullet", "player_bullet.png");
+    game.load.image("falling_platform", "falling_platform.png");
+    game.load.image("destructable_platform", "destructable_platform.png");
+    game.load.json("map_data", "data.json");
     game.stage.setBackgroundColor(0x000000);
   };
 
@@ -74,9 +80,42 @@ var state_gameplay = (function(){
     platform_group = game.add.group();
     platform_group.enableBody = true;
 
-    var ground = platform_group.create(0, world_height - 100 + 10, "platform");
-    ground.scale.setTo(32, 1);
-    ground.body.immovable = true;
+    falling_platform_group = game.add.group();
+    falling_platform_group.enableBody = true;
+
+    destructable_platform_group = game.add.group();
+    destructable_platform_group.enableBody = true;
+
+    moving_platform_group = game.add.group();
+    moving_platform_group.enableBody = true;
+
+    enemy_group = game.add.group();
+    enemy_group.enableBody = true;
+
+    enemy_bullet_group = game.add.group();
+    enemy_bullet_group.enableBody = true;
+
+    player_bullet_group = game.add.group();
+    player_bullet_group.enableBody = true;
+
+    //create ground
+    Platform.createPlatform(0, world_height - 100 + 10, 320, 10, platform_group);
+
+    DataImporter.import(game.cache.getJSON("map_data"), {
+      platform_group: platform_group,
+      moving_platform_group: moving_platform_group,
+      destructable_platform_group: destructable_platform_group,
+      falling_platform_group: falling_platform_group,
+      enemy_group: enemy_group
+    }, player);
+
+    darkness = game.add.tileSprite(0, 10000, 320, 460, "darkness");
+    game.physics.enable(darkness, Phaser.Physics.ARCADE);
+    darkness.body.velocity.y = -10;
+
+    heart_group = game.add.group();
+    updatePlayerHealth(0);
+
 
     pendulum_heads = game.add.group();
     pendulum_roots = game.add.group();
@@ -89,7 +128,7 @@ var state_gameplay = (function(){
 
     
 
-    pendulum_head.body.immovable = true;
+    pendulum_head.body.immoving = true;
     pendulum_heads.add(pendulum_head);
 
     var pendulum_root = game.add.sprite(100, 120, "platform");
@@ -106,25 +145,6 @@ var state_gameplay = (function(){
     pendulums.add(p);
     */
 
-    enemy_group = game.add.group();
-    enemy_group.enableBody = true;
-    Enemy.addEnemy(90, 9000, enemy_group);
-    Enemy.addEnemy(10, 9500, enemy_group);
-
-    enemy_bullet_group = game.add.group();
-    enemy_bullet_group.enableBody = true;
-
-    player_bullet_group = game.add.group();
-    player_bullet_group.enableBody = true;
-
-    DataImporter.import(data, platform_group);
-
-    darkness = game.add.tileSprite(0, 10000, 320, 460, "darkness");
-    game.physics.enable(darkness, Phaser.Physics.ARCADE);
-    darkness.body.velocity.y = -10;
-
-    heart_group = game.add.group();
-    updatePlayerHealth(0);
   };
 
   that.render = function(){
@@ -150,7 +170,6 @@ var state_gameplay = (function(){
       if(player.body.velocity.x < -185){
         player.body.velocity.x = -185;
       }
-      
       player.play("walking");
       player.scale.setTo(1, 1);
     } else {
@@ -170,12 +189,14 @@ var state_gameplay = (function(){
       var angle = game.physics.arcade.angleToPointer(player);
       bullet.angle = angle * 180 / Math.PI;
       bullet.body.angle = angle;
-      bullet.body.velocity.x = 350 * Math.cos(angle);
-      bullet.body.velocity.y = 350 * Math.sin(angle);
+      bullet.body.velocity.x = 400 * Math.cos(angle);
+      bullet.body.velocity.y = 400 * Math.sin(angle);
     }
 
-   
     game.physics.arcade.collide(enemy_group, platform_group);
+    game.physics.arcade.collide(enemy_group, moving_platform_group);
+    game.physics.arcade.collide(enemy_group, falling_platform_group);
+    game.physics.arcade.collide(enemy_group, destructable_platform_group);
     game.physics.arcade.collide(enemy_group, player, function(p, e){
       updatePlayerHealth(CONFIG.HEART_AMT);
       Enemy.killEnemy(e);
@@ -189,7 +210,24 @@ var state_gameplay = (function(){
       b.kill();
     });
     game.physics.arcade.collide(player, platform_group);
+    game.physics.arcade.collide(player, destructable_platform_group);
+    game.physics.arcade.collide(destructable_platform_group, player_bullet_group, function(p, b){
+      p.health--;
+      if(p.health <= 0){
+        p.destroy();
+      }
+      b.kill();
+      Utilities.createExplosion(b.body.x, b.body.y);
+    });
+    game.physics.arcade.collide(player, falling_platform_group, function(pl, plat){
+      if(pl.body.touching.down){
+        plat.fall_initiated = true;
+      }
+    });
+    Platform.updateFalling(falling_platform_group);
 
+    game.physics.arcade.collide(player, moving_platform_group);
+    Platform.updateMoving(moving_platform_group);
 
     /*
     game.physics.arcade.collide(player, pendulum_heads, function(pl, ph){
