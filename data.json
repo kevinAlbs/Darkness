@@ -1,0 +1,1 @@
+var data = {"platforms":[{"x":0,"y":9215,"width":197,"spikes":[],"pickups":[]},{"x":10,"y":299,"width":200,"spikes":[],"pickups":[]}],"enemies":[{"x":37,"y":9128,"type":"zombie","dist":""}],"playerX":80,"playerY":210}
