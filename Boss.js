@@ -46,34 +46,6 @@ var Boss = (function(){
     	return boss_body.y > 400;
     }
 
-    that.fireBullet = function(x, y, enemy_bullet_group, params){
-    	var defaults = {
-    		angle: null,
-    		target: null,
-    		speed: 220,
-    		angle_variance: 0
-    	}
-    	var settings = Utilities.extend(defaults, params);
-    	//create bullet at head
-    	if(settings.target !== null){
-    		settings.angle = game.physics.arcade.angleBetween(boss_head, settings.target);
-    	}
-    	var b = enemy_bullet_group.getFirstDead();
-    	if(b == null) {
-    		b = enemy_bullet_group.create(boss_head.x, boss_head.y, "enemy_bullet");
-    	} else {
-    		b.revive();
-    	}
-    	b.x = x;
-    	b.y = y; 
-    	var angle = settings.angle + Math.random() * (settings.angle_variance -  settings.angle_variance/2);
-		b.angle = angle * 180 / Math.PI;
-		b.body.angle = angle;
-		b.body.velocity.x = settings.speed * Math.cos(angle);
-		b.body.velocity.y = settings.speed * Math.sin(angle);
-		b.outOfBoundsKill = true;
-    }
-
 	that.update = function(enemy_bullet_group, player_group) {
 		if(!that.isDead()){
 			//strategy
@@ -84,19 +56,19 @@ var Boss = (function(){
 		          defense_move_timer = 2000;
 		        }
 		        if(defense_small_attack_timer < 0){
-		        	that.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {angle: Math.PI * 1/2});
+		        	Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {angle: Math.PI * 1/2});
 		        	defense_small_attack_timer = 750;
 		        }
 		        if(defense_mid_attack_timer < 0){
 		        	var target = player_group.getRandom();
-		        	that.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_variance: .1});
-		        	that.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_variance: .2});
-		        	that.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_variance: .3});
+		        	Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_variance: .1});
+		        	Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_variance: .2});
+		        	Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_variance: .3});
 		        	defense_mid_attack_timer = 1000;
 		        }
 		        if(defense_large_attack_timer < 0){
 		        	for(var i = 30; i < 150; i += 5){
-		        		that.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {angle: i * (Math.PI/180)})
+		        		Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {angle: i * (Math.PI/180)})
 		        	}
 		        	defense_large_attack_timer = 5000;
 		        }

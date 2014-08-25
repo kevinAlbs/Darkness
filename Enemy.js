@@ -19,6 +19,35 @@ var Enemy = (function(){
 			enemy.damage(1);
 		}
 	}
+
+	that.fireBullet = function(x, y, enemy_bullet_group, params){
+    	var defaults = {
+    		angle: null,
+    		target: null,
+    		speed: 220,
+    		angle_variance: 0
+    	}
+    	var settings = Utilities.extend(defaults, params);
+    	//create bullet at head
+    	if(settings.target !== null){
+    		settings.angle = Math.PI + game.physics.arcade.angleToXY(settings.target, x, y);
+    	}
+    	var b = enemy_bullet_group.getFirstDead();
+    	if(b == null) {
+    		b = enemy_bullet_group.create(x, y, "enemy_bullet");
+    	} else {
+    		b.revive();
+    	}
+    	b.body.x = x;
+    	b.body.y = y; 
+    	var angle = settings.angle + Math.random() * (settings.angle_variance -  settings.angle_variance/2);
+		b.angle = angle * 180 / Math.PI;
+		b.body.angle = angle;
+		b.body.velocity.x = settings.speed * Math.cos(angle);
+		b.body.velocity.y = settings.speed * Math.sin(angle);
+		b.outOfBoundsKill = true;
+    }
+
 	that.killEnemy = function(enemy) {
 		//create explosion
 		Utilities.createExplosion(enemy.body.x + enemy.width/2, enemy.body.y + enemy.height/2);
@@ -40,13 +69,7 @@ var Enemy = (function(){
 			enemy.fire_timer -= 16;
 			if(enemy.fire_timer < 0){
 				enemy.fire_timer = 1000 + Math.random() * 1000;
-				//create new bullet
-				var b = enemy_bullet_group.create(enemy.body.x + enemy.width/2, enemy.body.y + enemy.height/3, "enemy_bullet");
-				var angle = game.physics.arcade.angleBetween(enemy, player);;
-				b.angle = angle * 180 / Math.PI;
-				b.body.angle = angle;
-				b.body.velocity.x = 200 * Math.cos(angle);
-				b.body.velocity.y = 200 * Math.sin(angle);
+				that.fireBullet(enemy.body.x + enemy.width/2, enemy.body.y + enemy.height/3, enemy_bullet_group, {target: player, speed: 200})
 			}
 			
 		}

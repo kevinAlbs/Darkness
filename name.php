@@ -10,7 +10,15 @@ if(isset($_REQUEST['name'])){
 	fclose($f);
 } else if(isset($_REQUEST['get'])){
 	$names = file_get_contents("names.csv");
-	if($names){
-		echo $names;
+	if(!$names){
+		echo "kevinalbs";
 	}
+	$name_arr = explode(",", $names);
+	shuffle($name_arr);
+	if(count($name_arr) > 10){
+		echo implode(",", array_slice($name_arr, 0, 10));
+	} else {
+		echo implode(",", $name_arr);
+	}
+
 }
