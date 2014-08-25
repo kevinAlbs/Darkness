@@ -20,13 +20,18 @@ var Enemy = (function(){
 		}
 	}
 	that.killEnemy = function(enemy) {
-		enemy.kill();
 		//create explosion
 		Utilities.createExplosion(enemy.body.x + enemy.width/2, enemy.body.y + enemy.height/2);
+		enemy.destroy();
 		//show dead enemy
 	}
 
 	that.ai = function(enemy, enemy_bullet_group, player) {
+		if(player.x > enemy.x + 10) {
+			enemy.scale.setTo(1, 1);
+		} else if (player.x < enemy.x - 10) {
+			enemy.scale.setTo(-1, 1);
+		}
 		enemy.body.velocity.x *= .9;
 		if (Math.abs(player.body.y - enemy.body.y) < 250) {
 			if (!enemy.hasOwnProperty("fire_timer")){
@@ -36,7 +41,7 @@ var Enemy = (function(){
 			if(enemy.fire_timer < 0){
 				enemy.fire_timer = 1000 + Math.random() * 1000;
 				//create new bullet
-				var b = enemy_bullet_group.create(enemy.body.x + enemy.width/2, enemy.body.y + enemy.height/2, "enemy_bullet");
+				var b = enemy_bullet_group.create(enemy.body.x + enemy.width/2, enemy.body.y + enemy.height/3, "enemy_bullet");
 				var angle = game.physics.arcade.angleBetween(enemy, player);;
 				b.angle = angle * 180 / Math.PI;
 				b.body.angle = angle;

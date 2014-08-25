@@ -6,6 +6,7 @@ var Platform = (function(){
 		var platform = platform_group.create(x, y, "platform");
 	    platform.scale.setTo(width/10, height/10);
 	    platform.body.immovable = true;
+	    return platform;
 	};
 
 	/* @param dir - can be 'up', 'left', 'down', 'right' */

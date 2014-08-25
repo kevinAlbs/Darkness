@@ -99,7 +99,6 @@
       width: 300px;
       height: 440px;
       color: #FFF;
-      display: none;
     }
     #menu_screen{
       z-index: 5;
@@ -140,24 +139,7 @@
 </head>
 
 <body>
-  <div id="game_container">
-    <div class="screen" id="menu_screen">
-      <h1>Darkness</h1>
-      <a>Play</a>
-    </div>
-    <div class="screen" id="name_screen">
-      <p>Your name</p>
-      <input id="name" maxlength="10"/>
-      <br/><br/>
-      <p>Are you okay with your name being used in the game?</p>
-      <select id="ok">
-        <option value="yes">Yes</option>
-        <option value="no">No</option>
-      </select>
-      <br/><br/>
-      <a id="play">Play</a>
-    </div>
-    
+  <div id="game_container">    
     <div id="text_overlay">
       <p><span>kevin albs></span> You don't have to travel alone</p>
     </div>
@@ -170,19 +152,16 @@
   </div>
 	
   <script>
-    //globals
+    var friends = [];
     var CONFIG = {
       GRAVITY : 800,
       HEART_AMT : 20,
       NAME: "",
       FRIENDS : ["kevinalbs"],
-      FLAGS : [] //noconvos, boss, nomenu
+      CONVOS : []
     };
-    var game = null;
-
   </script>
-
-	<script src="phaser.complete.js"></script>
+	<script src="phaser.js"></script>
   <script src="jquery-1.11.1.min.js"></script>
   <script src="LinkedList.extension.js"></script>
   <script src="Utilities.js"></script>
@@ -193,74 +172,25 @@
   <script src="Platform.js"></script>
   <script src="DataImporter.js"></script>
   <script src="TextOverlay.js"></script>
+	<script src="state_gameplay.js"></script>
   <script src="state_boss.js"></script>
-  <script src="state_gameplay.js"></script>
 
   <script>
-  (function(){
+  var game;
+
+  $.ajax({
+      "url" : "name.php",
+      "method" : "post",
+      "data" : {
+        "get" : true
+      },
+      success : function(data){
+        CONFIG.FRIENDS = data.split(",");
+      }
+    });
+  game = new Phaser.Game(320, 460, Phaser.AUTO, "game", state_boss);
     
-    if(CONFIG.FLAGS['boss']){
-      game = new Phaser.Game(320, 460, Phaser.AUTO, "game", state_boss);
-    } else {
-      game = new Phaser.Game(320, 460, Phaser.AUTO, "game", state_gameplay);
-    }
-
-    var flags = window.location.hash ? window.location.hash.substring(1).split("|") : [];
-    for(var i = 0; i < flags.length; i++){
-      CONFIG.FLAGS[flags[i]] = true;
-    }
-
-
-    if(CONFIG.FLAGS['nomenu'] || CONFIG.FLAGS['boss']){
-      state_gameplay.menuInit();
-    }
-    else { 
-      $("#menu_screen").show(); 
-      //stupid menu stuff
-      $("#menu_screen a").click(function(){
-        $("#menu_screen").hide();
-        $("#name_screen").show();
-      })
-      $.ajax({
-          "url" : "name.php",
-          "method" : "post",
-          "data" : {
-            "get" : true
-          },
-          success : function(data){
-            CONFIG.FRIENDS = data.split(",");
-          }
-        });
-
-      $("#play").click(function(){
-        var name = $("#name").val().trim();
-        if(name == ""){
-          alert("Please enter a name");
-          return;
-        }
-        if($("#ok").val() == "yes"){
-          console.log("submitting");
-          $.ajax({
-            "url" : "name.php",
-            "method" : "post",
-            "data" : {
-              "name" : name
-            }
-          });
-        }
-
-        CONFIG.NAME = name;
-        
-        $("#name_screen").fadeOut(500,
-          function(){
-            state_gameplay.menuInit();
-          }
-        );
-        
-      });
-      
-    }
-  }());
+    
   </script>
 </body>
 </html>

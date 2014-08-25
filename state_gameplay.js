@@ -1,7 +1,4 @@
-var CONFIG = {
-  GRAVITY : 800,
-  HEART_AMT : 20
-}
+
 var state_gameplay = (function(){
   var that = {};
   var player, 
@@ -12,8 +9,7 @@ var state_gameplay = (function(){
       enemy_group,
       enemy_bullet_group,
       player_bullet_group;
-  var pendulum_heads; //Phaser group
-  var pendulum_roots; //Phaser group
+  var final_platform;
   var pendulums = new Phaser.LinkedList();
   var darkness;
   var heart_group;
@@ -21,6 +17,9 @@ var state_gameplay = (function(){
   var world_height = 10000;
   var checkpoint = null;
   var checkpoint_reached = false;
+  var ascended = false;
+  var first_run = false;
+  var in_menu = true;
 
   /* setup for keyboard/mouse input */
   function initInput(){
@@ -43,20 +42,20 @@ var state_gameplay = (function(){
   }
   
   that.preload = function(){
-    game.load.image("enemy", "enemy.png");
-    game.load.image("platform", "platform.png");
-    game.load.image("background_tile", "background.png");
-    game.load.image("pendulum_head", "pendulum_head.png");
-    game.load.image("white_particle", "white_particle.png");
-    game.load.image("heart", "heart.png");
-    game.load.image("darkness", "darkness.png");
-    game.load.spritesheet("player", "player.png", 11, 25);
-    game.load.image("enemy_bullet", "enemy_bullet.png");
-    game.load.image("player_bullet", "player_bullet.png");
-    game.load.image("falling_platform", "falling_platform.png");
-    game.load.image("destructable_platform", "destructable_platform.png");
-    game.load.image("flag", "flag.png");
-    game.load.json("map_data", "data.json");
+    game.load.image("enemy", "res/img/enemy.png");
+    game.load.image("platform", "res/img/platform.png");
+    game.load.image("background_tile", "res/img/background.png");
+    game.load.image("white_particle", "res/img/white_particle.png");
+    game.load.image("black_particle", "res/img/black_particle.png");
+    game.load.image("heart", "res/img/heart.png");
+    game.load.image("darkness", "res/img/darkness.png");
+    game.load.spritesheet("player", "res/img/player.png", 11, 25);
+    game.load.image("enemy_bullet", "res/img/enemy_bullet.png");
+    game.load.image("player_bullet", "res/img/player_bullet.png");
+    game.load.image("falling_platform", "res/img/falling_platform.png");
+    game.load.image("destructable_platform", "res/img/destructable_platform.png");
+    game.load.image("flag", "res/img/flag.png");
+    game.load.json("map_data", "res/data/map.json");
     game.stage.setBackgroundColor(0x000000);
   };
 
@@ -74,7 +73,8 @@ var state_gameplay = (function(){
     player.anchor.setTo(.5, .5);
     player.animations.add("standing", [0])
     player.animations.add("walking", [1,2,3,4], 25, false);
-    player.health = CONFIG.HEART_AMT * 5;
+    player.animations.add("death", [6, 7, 8], 10, false);
+    player.health = CONFIG.HEART_AMT * 3;
     game.physics.enable(player, Phaser.Physics.ARCADE);
     player.body.gravity.y = CONFIG.GRAVITY;
     player.body.collideWorldBounds = true;
@@ -103,6 +103,8 @@ var state_gameplay = (function(){
 
     //create ground
     Platform.createPlatform(0, world_height - 100 + 10, 320, 10, platform_group);
+    final_platform = Platform.createPlatform(0, 1307, 50, 10, platform_group);
+    console.log(final_platform);
 
     DataImporter.import(game.cache.getJSON("map_data"), {
       platform_group: platform_group,
@@ -112,76 +114,142 @@ var state_gameplay = (function(){
       enemy_group: enemy_group
     }, player);
 
+
+
+    darkness = game.add.tileSprite(0, 10000, 320, 1000, "darkness");
+    game.physics.enable(darkness, Phaser.Physics.ARCADE);
+    darkness.body.velocity.y = -20;
+    darkness.body.acceleration.y = -1;
+    darkness.body.immovable = true;
+
     if(checkpoint_reached) {
       player.x = checkpoint.x;
       player.y = checkpoint.y - 7;
+      darkness.y = checkpoint.y + 460;
+      darkness.body.velocity.y = -40;
+      darkness.body.acceleration.y = -2;
     }
-
-    darkness = game.add.tileSprite(0, 10000, 320, 460, "darkness");
-    game.physics.enable(darkness, Phaser.Physics.ARCADE);
-    darkness.body.velocity.y = -10;
 
     heart_group = game.add.group();
     updatePlayerHealth(0);
-
+    if(in_menu){
+      game.paused = true;
+    }
   };
 
   that.render = function(){
     //debug
   };
 
+  //called when menu done
+  that.menuInit = function(){
+    first_run = true;
+    game.paused = false;
+    in_menu = false;
+  }
+
   that.update = function(){
-    if(game.input.keyboard.isDown(Phaser.Keyboard.D)){
-      player.play("walking");
-      player.scale.setTo(-1, 1);
-      if(player.body.velocity.x < 0){
-        player.body.velocity.x = 0;
+    if(first_run){
+     TextOverlay.showFt(true);
+     TextOverlay.say([
+        [
+          {
+            "name" : CONFIG.NAME,
+            "message": "I've been trapped in this darkness."
+          },
+          {
+            "name" : CONFIG.NAME,
+            "message": "This might be my only escape."
+          },
+          {
+            "name" : CONFIG.NAME,
+            "message": "I need to reach the top before I'm submerged"
+          }
+        ]
+      ]);
+      first_run = false;
+    }
+    if(ascended){
+      return;
+    }
+    TextOverlay.updateFt(Math.floor((player.y - 1295) * (1000 / 9500)));
+
+    if(darkness.body.velocity.y < -80){
+      darkness.body.velocity.y = -80;
+      darkness.body.acceleration.y = 0;
+    }
+    if(player.alive){
+      if(game.input.keyboard.isDown(Phaser.Keyboard.D)){
+        player.play("walking");
+        player.scale.setTo(-1, 1);
+        if(player.body.velocity.x < 0){
+          player.body.velocity.x = 0;
+        }
+        player.body.velocity.x += 10;
+        if(player.body.velocity.x > 185){
+          player.body.velocity.x = 185;
+        }
+      } else if(game.input.keyboard.isDown(Phaser.Keyboard.A)){
+        if(player.body.velocity.x > 0){
+          player.body.velocity.x = 0;
+        }
+        player.body.velocity.x -= 10;
+        if(player.body.velocity.x < -185){
+          player.body.velocity.x = -185;
+        }
+        player.play("walking");
+        player.scale.setTo(1, 1);
+      } else {
+        player.body.velocity.x *= .90;
+        player.play("standing");
       }
-      player.body.velocity.x += 10;
-      if(player.body.velocity.x > 185){
-        player.body.velocity.x = 185;
+
+      if(game.input.keyboard.isDown(Phaser.Keyboard.R)) {
+        console.log("Released");
+        updatePlayerHealth(CONFIG.HEART_AMT * 5);
       }
-    } else if(game.input.keyboard.isDown(Phaser.Keyboard.A)){
-      if(player.body.velocity.x > 0){
-        player.body.velocity.x = 0;
+
+
+      if(mouse_click){
+        var bullet = player_bullet_group.getFirstDead();
+        if(!bullet){
+          bullet = player_bullet_group.create(0, 0, "player_bullet");
+        } else {
+          bullet.revive();
+        }
+        bullet.outOfBoundsKill = true;
+        //bullet.lifespan = 2000;
+        bullet.body.x = player.x;
+        bullet.body.y = player.y - player.height/4;
+        var angle = game.physics.arcade.angleToPointer(player);
+        bullet.angle = angle * 180 / Math.PI;
+        bullet.body.angle = angle;
+        bullet.body.velocity.x = 400 * Math.cos(angle);
+        bullet.body.velocity.y = 400 * Math.sin(angle);
       }
-      player.body.velocity.x -= 10;
-      if(player.body.velocity.x < -185){
-        player.body.velocity.x = -185;
-      }
-      player.play("walking");
-      player.scale.setTo(1, 1);
-    } else {
-      player.body.velocity.x *= .90;
-      player.play("standing");
     }
 
-    if(mouse_click){
-      var bullet = player_bullet_group.getFirstDead();
-      if(!bullet){
-        bullet = player_bullet_group.create(player.body.x, player.body.y, "player_bullet");
-      } else {
-        bullet.revive();
-      }
-      bullet.body.x = player.body.x;
-      bullet.body.y = player.body.y;
-      var angle = game.physics.arcade.angleToPointer(player);
-      bullet.angle = angle * 180 / Math.PI;
-      bullet.body.angle = angle;
-      bullet.body.velocity.x = 400 * Math.cos(angle);
-      bullet.body.velocity.y = 400 * Math.sin(angle);
-    }
+    game.physics.arcade.collide(player, final_platform, function(){
+      ascended = true;
+      //game.paused = true;
+      Screen.transition(function(){
+        console.log("here");
+        game.state.add("boss", state_boss, true);
+        game.state.start("boss", true);
+      });
+    });
+
 
     game.physics.arcade.collide(enemy_group, platform_group);
     game.physics.arcade.collide(enemy_group, moving_platform_group);
     game.physics.arcade.collide(enemy_group, falling_platform_group);
     game.physics.arcade.collide(enemy_group, destructable_platform_group);
     game.physics.arcade.collide(enemy_group, player, function(p, e){
-      updatePlayerHealth(CONFIG.HEART_AMT);
+      updatePlayerHealth(CONFIG.HEART_AMT, 2000);
       Enemy.killEnemy(e);
     });
     game.physics.arcade.collide(enemy_bullet_group, player, function(p, b){
-      updatePlayerHealth(CONFIG.HEART_AMT/2);
+      updatePlayerHealth(CONFIG.HEART_AMT/2, 2000);
       b.kill();
     });
     game.physics.arcade.collide(player_bullet_group, enemy_group, function(b, e){
@@ -189,6 +257,9 @@ var state_gameplay = (function(){
       b.kill();
     });
     game.physics.arcade.collide(player, platform_group);
+    game.physics.arcade.collide(player, darkness, function(p, d){
+      updatePlayerHealth(CONFIG.HEART_AMT * 5, 3000);
+    });
     game.physics.arcade.collide(player, destructable_platform_group);
 
     var to_be_destroyed = [];
@@ -218,21 +289,34 @@ var state_gameplay = (function(){
       Enemy.ai(enemy, enemy_bullet_group, player);
     });
 
+
     if (checkpoint != null && Math.abs(player.y - checkpoint.y) <= 15){
       checkpoint_reached = true;
     }
-    
+
     if(game.input.keyboard.isDown(Phaser.Keyboard.W) && player.body.touching.down){
       player.body.velocity.y = -500;
     }
     mouse_click = false;
   };
   
-  function updatePlayerHealth(dmg) {
+  function updatePlayerHealth(dmg, time_to_transition) {
     if (dmg > 0) {
-      player.damage(dmg);
+      player.damage(dmg);      
       if(!player.alive){
         //restart
+        window.setTimeout(
+          function(){
+           Screen.transition(function(){
+            game.state.restart();
+           })
+          },
+          time_to_transition
+        );
+        Utilities.createExplosion(player.x, player.y, {color: "black", amount: 30});
+        
+        //show death
+        //player.animations.play("death", 10, false, true);
       }
     }
     heart_group.removeAll();
@@ -254,5 +338,3 @@ var state_gameplay = (function(){
   }
   return that;
 }());
-
-var game = new Phaser.Game(320, 460, Phaser.AUTO, "game", state_gameplay);
