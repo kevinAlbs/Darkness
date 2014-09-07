@@ -72,15 +72,7 @@ var state_gameplay = (function(){
     Utilities.init();
 
     //add initial objects
-    player = game.add.sprite(200, world_height - 100, "player", 0);
-    player.anchor.setTo(.5, .5);
-    player.animations.add("standing", [0])
-    player.animations.add("walking", [1,2,3,4], 25, false);
-    player.animations.add("death", [6, 7, 8], 10, false);
-    player.health = CONFIG.HEART_AMT * 3;
-    game.physics.enable(player, Phaser.Physics.ARCADE);
-    player.body.gravity.y = CONFIG.GRAVITY;
-    player.body.collideWorldBounds = true;
+    player = Player.createPlayer(200, world_height - 100)
     game.camera.follow(player);
     
     platform_group = game.add.group();
@@ -107,7 +99,6 @@ var state_gameplay = (function(){
     //create ground
     Platform.createPlatform(0, world_height - 100 + 10, 320, 10, platform_group);
     final_platform = Platform.createPlatform(0, 1307, 50, 10, platform_group);
-    console.log(final_platform);
 
     DataImporter.import(game.cache.getJSON("map_data"), {
       platform_group: platform_group,
@@ -121,7 +112,7 @@ var state_gameplay = (function(){
 
     darkness = game.add.tileSprite(0, 10000, 320, 1000, "darkness");
     game.physics.enable(darkness, Phaser.Physics.ARCADE);
-    darkness.body.velocity.y = -20;
+    darkness.body.velocity.y = -8;
     darkness.body.acceleration.y = -1;
     darkness.body.immovable = true;
 
@@ -213,24 +204,8 @@ var state_gameplay = (function(){
       }
 
 
-      if(mouse_click){
-
-        var bullet = player_bullet_group.getFirstDead();
-        if(!bullet){
-          bullet = player_bullet_group.create(0, 0, "player_bullet");
-        } else {
-          bullet.revive();
-        }
-        bullet.outOfBoundsKill = true;
-        //bullet.lifespan = 2000;
-        bullet.body.x = player.x;
-        bullet.body.y = player.y - player.height/4;
-        var angle = game.physics.arcade.angleToPointer(player);
-        bullet.angle = angle * 180 / Math.PI;
-        bullet.body.angle = angle;
-        bullet.body.velocity.x = 400 * Math.cos(angle);
-        bullet.body.velocity.y = 400 * Math.sin(angle);
-        game.sound.play("shoot");
+      if(mouse_down){
+        Player.fireBullet(player, player_bullet_group);
       }
     }
 
@@ -238,7 +213,6 @@ var state_gameplay = (function(){
       ascended = true;
       //game.paused = true;
       Screen.transition(function(){
-        console.log("here");
         game.state.add("boss", state_boss, true);
         game.state.start("boss", true);
       });
@@ -249,24 +223,25 @@ var state_gameplay = (function(){
     game.physics.arcade.collide(enemy_group, moving_platform_group);
     game.physics.arcade.collide(enemy_group, falling_platform_group);
     game.physics.arcade.collide(enemy_group, destructable_platform_group);
-    game.physics.arcade.overlap(enemy_group, player, function(p, e){
+    game.physics.arcade.collide(enemy_group, player, function(p, e){
       updatePlayerHealth(CONFIG.HEART_AMT, 2000);
       game.sound.play("hurt");
       Enemy.killEnemy(e);
     });
-    game.physics.arcade.overlap(enemy_bullet_group, player, function(p, b){
+    game.physics.arcade.collide(enemy_bullet_group, player, function(p, b){
       updatePlayerHealth(CONFIG.HEART_AMT/2, 2000);
       Utilities.createExplosion(b.body.x, b.body.y);
       game.sound.play("hurt");
       b.kill();
     });
-    game.physics.arcade.overlap(player_bullet_group, enemy_group, function(b, e){
+    game.physics.arcade.collide(player_bullet_group, enemy_group, function(b, e){
       Enemy.damage(e);
       b.kill();
     });
     game.physics.arcade.collide(player, platform_group);
     game.physics.arcade.collide(player, darkness, function(p, d){
       updatePlayerHealth(CONFIG.HEART_AMT * 5, 3000);
+      game.sound.play("hurt");
     });
     game.physics.arcade.collide(player, destructable_platform_group);
 
@@ -322,10 +297,7 @@ var state_gameplay = (function(){
           },
           time_to_transition
         );
-        Utilities.createExplosion(player.x, player.y, {color: "black", amount: 30});
-        
-        //show death
-        //player.animations.play("death", 10, false, true);
+        Utilities.createExplosion(player.x, player.y, {color: "black", amount: 40});
       }
     }
     heart_group.removeAll();

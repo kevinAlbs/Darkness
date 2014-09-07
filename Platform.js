@@ -21,7 +21,7 @@ var Platform = (function(){
 
 	that.createDestructable = function(x, y, width, destructable_platform_group) {
 		var destructable = game.add.tileSprite(x, y, width, 10, "destructable_platform");
-	    destructable.health = 3;
+	    destructable.health = 5;
 	    destructable_platform_group.add(destructable);
 	    destructable.body.immovable = true;
 	};

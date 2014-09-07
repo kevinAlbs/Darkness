@@ -61,13 +61,13 @@ var Boss = (function(){
 		        }
 		        if(defense_mid_attack_timer < 0){
 		        	var target = player_group.getRandom();
-		        	Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_variance: .1});
-		        	Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_variance: .2});
-		        	Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_variance: .3});
+		        	Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_delta: -.1});
+		        	Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_delta: 0});
+		        	Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {target: target, angle_delta: .1});
 		        	defense_mid_attack_timer = 1000;
 		        }
 		        if(defense_large_attack_timer < 0){
-		        	for(var i = 30; i < 150; i += 5){
+		        	for(var i = 30; i < 150; i += 10){
 		        		Enemy.fireBullet(boss_head.x, boss_head.y, enemy_bullet_group, {angle: i * (Math.PI/180)})
 		        	}
 		        	defense_large_attack_timer = 5000;

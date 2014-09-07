@@ -8,7 +8,7 @@ var Enemy = (function(){
 		//todo: add pooling
 		var enemy = enemy_group.create(x,y,"enemy");
 		enemy.anchor.setTo(.5, .5);
-		enemy.health = 2;
+		enemy.health = 4;
 		enemy.body.collideWorldBounds = true;
 		enemy.body.gravity.y = CONFIG.GRAVITY;
 	}
@@ -24,6 +24,7 @@ var Enemy = (function(){
     	var defaults = {
     		angle: null,
     		target: null,
+    		angle_delta: 0,
     		speed: 220,
     		angle_variance: 0
     	}
@@ -31,6 +32,7 @@ var Enemy = (function(){
     	//create bullet at head
     	if(settings.target !== null){
     		settings.angle = Math.PI + game.physics.arcade.angleToXY(settings.target, x, y);
+    		settings.angle += settings.angle_delta;
     	}
     	var b = enemy_bullet_group.getFirstDead();
     	if(b == null) {

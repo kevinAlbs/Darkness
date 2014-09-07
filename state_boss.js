@@ -45,6 +45,9 @@ var state_boss = (function(){
     game.load.image("boss_body", "res/img/boss_body.png");
     game.load.image("boss_head", "res/img/boss_head.png");
     game.load.image("boss_tail", "res/img/boss_tail.png");
+    game.load.audio("jump", "res/snd/jump.wav");
+    game.load.audio("shoot", "res/snd/shoot.wav");
+    game.load.audio("hurt", "res/snd/hurt.wav");
     game.stage.setBackgroundColor(0x000000);
   };
 

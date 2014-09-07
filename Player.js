@@ -46,6 +46,7 @@ var Player = (function(){
 	        if(player.isAI){
 	        	player.gun_timer = 500;
 	        }
+	        game.sound.play("shoot");
 		} else {
 			player.gun_timer -= 16;
 		}
