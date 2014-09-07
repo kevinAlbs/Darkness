@@ -46,6 +46,7 @@ var Enemy = (function(){
 		b.body.velocity.x = settings.speed * Math.cos(angle);
 		b.body.velocity.y = settings.speed * Math.sin(angle);
 		b.outOfBoundsKill = true;
+		game.sound.play("shoot");
     }
 
 	that.killEnemy = function(enemy) {

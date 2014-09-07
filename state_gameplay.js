@@ -56,6 +56,9 @@ var state_gameplay = (function(){
     game.load.image("destructable_platform", "res/img/destructable_platform.png");
     game.load.image("flag", "res/img/flag.png");
     game.load.json("map_data", "res/data/map.json");
+    game.load.audio("jump", "res/snd/jump.wav");
+    game.load.audio("shoot", "res/snd/shoot.wav");
+    game.load.audio("hurt", "res/snd/hurt.wav");
     game.stage.setBackgroundColor(0x000000);
   };
 
@@ -211,6 +214,7 @@ var state_gameplay = (function(){
 
 
       if(mouse_click){
+
         var bullet = player_bullet_group.getFirstDead();
         if(!bullet){
           bullet = player_bullet_group.create(0, 0, "player_bullet");
@@ -226,6 +230,7 @@ var state_gameplay = (function(){
         bullet.body.angle = angle;
         bullet.body.velocity.x = 400 * Math.cos(angle);
         bullet.body.velocity.y = 400 * Math.sin(angle);
+        game.sound.play("shoot");
       }
     }
 
@@ -244,15 +249,18 @@ var state_gameplay = (function(){
     game.physics.arcade.collide(enemy_group, moving_platform_group);
     game.physics.arcade.collide(enemy_group, falling_platform_group);
     game.physics.arcade.collide(enemy_group, destructable_platform_group);
-    game.physics.arcade.collide(enemy_group, player, function(p, e){
+    game.physics.arcade.overlap(enemy_group, player, function(p, e){
       updatePlayerHealth(CONFIG.HEART_AMT, 2000);
+      game.sound.play("hurt");
       Enemy.killEnemy(e);
     });
-    game.physics.arcade.collide(enemy_bullet_group, player, function(p, b){
+    game.physics.arcade.overlap(enemy_bullet_group, player, function(p, b){
       updatePlayerHealth(CONFIG.HEART_AMT/2, 2000);
+      Utilities.createExplosion(b.body.x, b.body.y);
+      game.sound.play("hurt");
       b.kill();
     });
-    game.physics.arcade.collide(player_bullet_group, enemy_group, function(b, e){
+    game.physics.arcade.overlap(player_bullet_group, enemy_group, function(b, e){
       Enemy.damage(e);
       b.kill();
     });
@@ -295,6 +303,7 @@ var state_gameplay = (function(){
     }
 
     if(game.input.keyboard.isDown(Phaser.Keyboard.W) && player.body.touching.down){
+      game.sound.play("jump", .5);
       player.body.velocity.y = -500;
     }
     mouse_click = false;
